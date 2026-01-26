@@ -102,42 +102,43 @@ set (HDF5_HL_DIR_NAME                  "hl")
 #-----------------------------------------------------------------------------
 # Find HDF5, cURL and YAJL before building
 #-----------------------------------------------------------------------------
-if (HDF5_FOUND STREQUAL "")
-  set (HDF5_FOUND FALSE)
-endif()
+if (NOT HDF5_VOL_REST_PACKAGE_SOURCE)
+  if (HDF5_FOUND STREQUAL "")
+    set (HDF5_FOUND FALSE)
+  endif()
 
-find_package(HDF5 MODULE COMPONENTS C HL)
+  find_package(HDF5 MODULE COMPONENTS C HL)
 
-if (NOT HDF5_FOUND)
-  message(SEND_ERROR "HDF5 not found!")
-endif()
+  if (NOT HDF5_FOUND)
+    message(SEND_ERROR "HDF5 not found!")
+  endif()
 
-if (HDF5_ENABLE_THREADSAFE AND NOT Threads_FOUND)
-  find_package(Threads)
+  if (HDF5_ENABLE_THREADSAFE AND NOT Threads_FOUND)
+    find_package(Threads)
+  endif ()
+
+  set (CURL_TARGET_LIBTYPE shared)
+
+  find_package (CURL 7.61 MODULE REQUIRED)
+
+  if (CURL_FOUND)
+    include_directories(${CURL_INCLUDE_DIRS})
+    set (LINK_LIBS ${LINK_LIBS} CURL::libcurl)
+  else ()
+    message (FATAL_ERROR "cURL not found; please check CURL_ROOT")
+  endif ()
+
+  # Include custom module for finding YAJL
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${HDF5_VOL_REST_RESOURCES_MOD_DIR}")
+
+  find_package (YAJL 2.0.4 REQUIRED)
+  if (YAJL_FOUND)
+    include_directories(${YAJL_INCLUDE_DIRS})
+    set (LINK_LIBS ${LINK_LIBS} yajl)
+  else ()
+    message (FATAL_ERROR "YAJL not found; please check YAJL_INCLUDE_DIR")
+  endif ()
 endif ()
-
-set (CURL_TARGET_LIBTYPE shared)
-
-find_package (CURL 7.61 MODULE REQUIRED)
-
-if (CURL_FOUND)
-  include_directories(${CURL_INCLUDE_DIRS})
-  set (LINK_LIBS ${LINK_LIBS} CURL::libcurl)
-else ()
-  message (FATAL_ERROR "cURL not found; please check CURL_ROOT")
-endif ()
-
-# Include custom module for finding YAJL
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${HDF5_VOL_REST_RESOURCES_MOD_DIR}")
-
-find_package (YAJL 2.0.4 REQUIRED)
-if (YAJL_FOUND)
-  include_directories(${YAJL_INCLUDE_DIRS})
-  set (LINK_LIBS ${LINK_LIBS} yajl)
-else ()
-  message (FATAL_ERROR "YAJL not found; please check YAJL_INCLUDE_DIR")
-endif ()
-
 
 #-----------------------------------------------------------------------------
 # Setup the RPATH for the installed executables
